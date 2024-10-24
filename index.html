@@ -19,12 +19,15 @@
         /><br /><br />
 
         <button id="convertButton">MP3に変換</button>
-        <a id="downloadButton" style="display: none">MP3をダウンロード</a>
+        <a id="downloadButton" style="display: none">MP3をダウンロード</a
+        ><br /><br />
+
+        <!-- 再生用の audio タグ -->
+        <audio id="audioPlayer" controls style="display: none"></audio>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js"></script>
 
         <script>
-            // Cメジャースケールと周波数マッピング
             const baseFreqs = {
                 ド: 261.63,
                 レ: 293.66,
@@ -36,31 +39,24 @@
                 ン: 0, // 休符
             };
 
-            // サンプリングレートと音の長さ（秒）
             const sampleRate = 44100;
 
-            // 周波数をオクターブによって調整
             function adjustOctave(freq, octave) {
-                return freq * Math.pow(2, octave - 5); // 5が基準オクターブ
+                return freq * Math.pow(2, octave - 5);
             }
 
-            // サイン波を生成する
             function generateSineWave(frequency, duration) {
                 const samples = duration * sampleRate;
                 const wave = new Int16Array(samples);
-
                 for (let i = 0; i < samples; i++) {
                     const time = i / sampleRate;
                     wave[i] = Math.sin(2 * Math.PI * frequency * time) * 32767;
                 }
-
                 return wave;
             }
 
-            // 楽譜を波形に変換
             function generateWaveFromScore(score) {
                 let fullWave = new Int16Array(0);
-
                 score.forEach(({ note, duration, octave }) => {
                     const baseFreq = baseFreqs[note];
                     const frequency = adjustOctave(baseFreq, octave);
@@ -71,46 +67,35 @@
                     );
                     combinedWave.set(fullWave);
                     combinedWave.set(wave, fullWave.length);
-
                     fullWave = combinedWave;
                 });
-
                 return fullWave;
             }
 
-            // MP3に変換
             function convertToMP3(wave) {
-                const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128); // Mono, 128kbps
+                const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
                 const mp3Data = [];
-
                 const maxSamples = 1152;
                 for (let i = 0; i < wave.length; i += maxSamples) {
                     const sampleChunk = wave.subarray(i, i + maxSamples);
                     const mp3Buffer = mp3encoder.encodeBuffer(sampleChunk);
-                    if (mp3Buffer.length > 0) {
-                        mp3Data.push(mp3Buffer);
-                    }
+                    if (mp3Buffer.length > 0) mp3Data.push(mp3Buffer);
                 }
-
                 const mp3Buffer = mp3encoder.flush();
-                if (mp3Buffer.length > 0) {
-                    mp3Data.push(mp3Buffer);
-                }
-
+                if (mp3Buffer.length > 0) mp3Data.push(mp3Buffer);
                 return new Blob(mp3Data, { type: 'audio/mp3' });
             }
 
-            // ストトン表記を解析して楽譜を生成
             function parseStotonNotation(notation) {
                 const score = [];
-                let octave = 5; // 基本オクターブは5
+                let octave = 5;
                 const notes = notation.match(
                     /(↑|↓|[‘”]?(ド|レ|ミ|ファ|ソ|ラ|シ|ン)(ー*)[#♭]?|\d)/g
                 );
 
                 if (!notes) {
                     alert('無効な入力です。');
-                    return score; // 空のスコアを返す
+                    return score;
                 }
 
                 notes.forEach((note) => {
@@ -121,17 +106,15 @@
                     } else if (/^\d$/.test(note)) {
                         octave = parseInt(note);
                     } else {
-                        const dashCount = (note.match(/ー/g) || []).length; // 「ー」の個数を取得
+                        const dashCount = (note.match(/ー/g) || []).length;
                         let baseNote =
-                            note.match(/ド|レ|ミ|ファ|ソ|ラ|シ|ン/)[0]; // 音符を取得
-                        let duration = 1 + dashCount; // デフォルト1秒 + 「ー」の個数分延長
-                        let modifier = note.charAt(0); // オクターブ修飾記号
+                            note.match(/ド|レ|ミ|ファ|ソ|ラ|シ|ン/)[0];
+                        let duration = 1 + dashCount;
+                        let modifier = note.charAt(0);
 
-                        // オクターブ修飾の処理
                         if (modifier === '‘') octave++;
                         else if (modifier === '”') octave--;
 
-                        // 音符を追加
                         if (baseFreqs[baseNote]) {
                             score.push({ note: baseNote, duration, octave });
                         } else {
@@ -143,7 +126,6 @@
                 return score;
             }
 
-            // MP3を生成してダウンロードリンクを作成
             document
                 .getElementById('convertButton')
                 .addEventListener('click', () => {
@@ -156,12 +138,20 @@
                         const mp3Blob = convertToMP3(wave);
 
                         const url = URL.createObjectURL(mp3Blob);
+
+                        // ダウンロードリンクの設定
                         const downloadButton =
                             document.getElementById('downloadButton');
                         downloadButton.href = url;
                         downloadButton.download = 'output.mp3';
                         downloadButton.style.display = 'block';
                         downloadButton.textContent = 'MP3をダウンロード';
+
+                        // オーディオプレーヤーの設定
+                        const audioPlayer =
+                            document.getElementById('audioPlayer');
+                        audioPlayer.src = url;
+                        audioPlayer.style.display = 'block';
                     } else {
                         alert(
                             '無効な表記方法です。正しい形式で入力してください。'
