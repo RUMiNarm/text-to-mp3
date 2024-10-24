@@ -120,22 +120,18 @@
                         octave--;
                     } else if (/^\d$/.test(note)) {
                         octave = parseInt(note);
-                    } else if (note.includes('ー')) {
-                        // 「ー」の処理：直前の音符を延長
-                        const lastNote = score[score.length - 1]; // 配列の最後の音符を取得
-                        if (lastNote) {
-                            lastNote.duration += 1; // 音の長さを1秒延長
-                        }
                     } else {
-                        // 音符の処理
+                        const dashCount = (note.match(/ー/g) || []).length; // 「ー」の個数を取得
                         let baseNote =
-                            note.match(/ド|レ|ミ|ファ|ソ|ラ|シ|ン/)[0];
-                        let duration = 1; // デフォルトの長さは1秒
+                            note.match(/ド|レ|ミ|ファ|ソ|ラ|シ|ン/)[0]; // 音符を取得
+                        let duration = 1 + dashCount; // デフォルト1秒 + 「ー」の個数分延長
                         let modifier = note.charAt(0); // オクターブ修飾記号
 
+                        // オクターブ修飾の処理
                         if (modifier === '‘') octave++;
                         else if (modifier === '”') octave--;
 
+                        // 音符を追加
                         if (baseFreqs[baseNote]) {
                             score.push({ note: baseNote, duration, octave });
                         } else {
