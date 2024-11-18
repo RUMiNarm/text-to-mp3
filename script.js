@@ -57,9 +57,7 @@ function convertToMP3(wave) {
 function parseStotonNotation(notation) {
   const score = [];
   let octave = 5;
-  const notes = notation.match(
-    /(↑|↓|[‘”]?(ド|レ|ミ|ファ|ソ|ラ|シ|ン)(ー*)[#♭]?|\d)/g
-  );
+  const notes = notation.match(/(↑|↓|[‘”]?(ド|レ|ミ|ファ|ソ|ラ|シ|ン)(ー*)[#♭]?|\d)/g);
 
   if (!notes) {
     alert('無効な入力です。');
